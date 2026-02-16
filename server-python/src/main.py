@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from src.api.ai import router as ai_router
 
 load_dotenv()
 
 app = FastAPI(
-    title="llm-craft server",
+    title="LLM-craft server",
     description="server with FastAPI for llm-craft",
     version="1.0.0",
 )
@@ -19,10 +20,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 注册 ai 路由
+app.include_router(ai_router)
+
 
 @app.get("/")
 async def root():
-    return {"message": "AI Agent Server is running!", "status": "ok"}
+    return {"message": "LLM-craft Server with FastAPI is running!", "status": "ok"}
 
 
 @app.get("/hello")
@@ -35,7 +39,7 @@ if __name__ == "__main__":
     import os
 
     host = os.getenv("SERVER_HOST", "0.0.0.0")
-    port = int(os.getenv("SERVER_PORT", "3000"))
+    port = int(os.getenv("SERVER_PORT", "8000"))
 
     # reload=True 代码修改后自动重启
     uvicorn.run(
