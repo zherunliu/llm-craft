@@ -10,7 +10,7 @@ class Settings:
         )
         self.ollama_model: str = os.getenv("OLLAMA_MODEL", "glm-5:cloud")
         self.ollama_embedding_model: str = os.getenv(
-            "OLLAMA_EMBEDDING_MODEL", "nomic-embed-text"
+            "OLLAMA_EMBEDDING_MODEL", "embeddinggemma"
         )
 
         # 服务器配置

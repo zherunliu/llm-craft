@@ -12,7 +12,8 @@ wheels/
 # Environment variables
 .env
 
-# to continue
+# to be continue
 client-react
 server-nest
 README.md
+resources
