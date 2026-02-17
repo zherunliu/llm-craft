@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Query, HTTPException
 from fastapi.responses import StreamingResponse
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 
 from src.services.chat_model import get_chat_model_service
 from src.services.memory import get_memory_service
 from src.services.rag import get_rag_service
 from src.services.guardrail import get_guardrail
+from src.services.tools import ALL_TOOLS
+from src.services.structured_output import get_structured_service, Report, CodeReview
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 
@@ -137,3 +139,78 @@ async def chat_stream(
             "Access-Control-Allow-Origin": "*",  # 允许跨域
         },
     )
+
+
+@router.get("/chat/tools")
+async def chat_with_tools(
+    message: str = Query(..., description="用户消息"),
+):
+    chat_service = get_chat_model_service()
+    model = chat_service.get_chat_model()
+
+    model_with_tools = model.bind_tools(ALL_TOOLS)
+
+    messages = [
+        SystemMessage(
+            content=SYSTEM_PROMPT
+            + "\n\nyou can use the following tools: "
+            + ", ".join(t.name for t in ALL_TOOLS)
+        ),
+        HumanMessage(content=message),
+    ]
+
+    response = await model_with_tools.ainvoke(messages)
+
+    if response.tool_calls:
+        tool_results = []
+        for tool_call in response.tool_calls:
+            tool_name = tool_call["name"]
+            tool_args = tool_call["args"]
+
+            print(f"[Tool] invoke: {tool_name}, args: {tool_args}")
+
+            tool_func = next((t for t in ALL_TOOLS if t.name == tool_name), None)
+            if tool_func:
+                result = tool_func.invoke(tool_args)
+                tool_results.append(
+                    {
+                        "tool_call_id": tool_call["id"],
+                        "name": tool_name,
+                        "result": result,
+                    }
+                )
+
+        messages.append(response)
+        for tr in tool_results:
+            messages.append(
+                ToolMessage(content=tr["result"], tool_call_id=tr["tool_call_id"])
+            )
+
+        final_response = await model.ainvoke(messages)
+        return {
+            "reply": final_response.content,
+            "tool_calls": [
+                {"name": tc["name"], "args": tc["args"]} for tc in response.tool_calls
+            ],
+        }
+
+    return {"reply": response.content, "tool_calls": []}
+
+
+@router.get("/chat/report")
+async def generate_report(
+    topic: str = Query(..., description="报告主题"),
+) -> Report:
+    structured_service = get_structured_service()
+    report = await structured_service.generate_report(topic)
+    return report
+
+
+@router.post("/chat/code-review")
+async def review_code(
+    code: str = Query(..., description="要审查的代码"),
+    language: str = Query("python", description="编程语言"),
+) -> CodeReview:
+    structured_service = get_structured_service()
+    review = await structured_service.review_code(code, language)
+    return review

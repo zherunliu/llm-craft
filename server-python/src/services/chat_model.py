@@ -15,7 +15,7 @@ class ChatModelService:
         self.streaming_model: BaseChatModel = ChatOllama(
             base_url=settings.ollama_base_url,
             model=settings.ollama_model,
-            streaming=True,
+            streaming=True,  # type: ignore
         )
 
         print(
