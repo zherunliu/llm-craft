@@ -9,6 +9,7 @@ from src.services.rag import get_rag_service
 load_dotenv()
 
 
+# 自动处理异步资源的初始化和清理，必须装饰在一个 async generator 函数上
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """

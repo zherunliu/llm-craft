@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.services.chat_model import get_chat_model_service
 from src.services.memory import get_memory_service
 from src.services.rag import get_rag_service
+from src.services.guardrail import get_guardrail
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 
@@ -47,6 +48,14 @@ async def chat_sync(
     message: str = Query(..., description="用户消息"),
     memory_id: str = Query("default", description="会话ID，用于区分不同对话"),
 ):
+    guardrail = get_guardrail()
+    check_result = guardrail.validate(message)
+    if not check_result.safe:
+        raise HTTPException(
+            status_code=400,
+            detail=f"input validation failed: {'; '.join(check_result.failures)}",
+        )
+
     chat_service = get_chat_model_service()
     model = chat_service.get_chat_model()
 
@@ -79,6 +88,15 @@ async def chat_stream(
     message: str = Query(..., description="用户消息"),
     memory_id: str = Query("default", description="会话ID，用于区分不同对话"),
 ):
+    guardrail = get_guardrail()
+    check_result = guardrail.validate(message)
+    if not check_result.safe:
+        # 流式接口返回错误信息
+        async def error_stream():
+            yield f"data: [error] {'; '.join(check_result.failures)}\n\n"
+
+        return StreamingResponse(error_stream(), media_type="text/event-stream")
+
     chat_service = get_chat_model_service()
     streaming_model = chat_service.get_streaming_model()
 
