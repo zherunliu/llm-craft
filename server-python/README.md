@@ -1,8 +1,26 @@
+## quick start
+
 ```bash
 uv sync
 source .venv/bin/activate
-uv run uvicorn src.main:app --host 0.0.0.0 --port 3000 --reload
+uv run uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 ```
+
+- chat
+  - chat
+  - chatWithStream
+- memory
+- rag
+  - similaritySearch
+- structureOutput
+  - codeReview
+  - report
+- tools
+  - getTime
+  - calculate
+  - searchCode
+
+**import**
 
 - 直接导入从 `sys.path` 中查找路径
 - 相对导入从当前模块所在的路径（`__package__`）查找路径

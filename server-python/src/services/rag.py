@@ -89,10 +89,10 @@ class RagService:
         # similarity_search_with_score 返回 (doc, distance)
         results = await self.vector_store.asimilarity_search_with_score(query, k=k)
 
-        # distance -> similarity (1 / (1 + distance))
         filtered = []
         for doc, distance in results:
-            similarity = 1 / (1 + distance)  # 转换为 0-1 的相似度
+            # distance -> similarity (1 / (1 + distance))
+            similarity = 1 / (1 + distance)  # 转换为 0 - 1 的相似度
             if similarity >= score_threshold:
                 filtered.append((doc, similarity))
 
